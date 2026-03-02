@@ -14,6 +14,8 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const { favorites, setSelectedStation } = useStationStore();
 
   if (!isOpen) return null;
+  
+  console.log("stations 개수:", stations.length, "검색어:", query);
 
   const filteredStations = query
     ? stations.filter(s => s.name.includes(query))
