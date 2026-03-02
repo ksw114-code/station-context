@@ -6,6 +6,7 @@ import BottomSheet from './components/BottomSheet';
 import SearchOverlay from './components/SearchOverlay';
 import RoutePanel from './components/RoutePanel';
 import RouteDetail from './components/RouteDetail';
+import NearbyStations from './components/NearbyStations';
 import { useStationStore } from './stores/useStationStore';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
       <SubwayMap />
       <BottomSheet />
       <SearchOverlay isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <NearbyStations />
       {isRouteMode && <RouteDetail />}
       <style>{`
         @keyframes slide-up {
