@@ -2,6 +2,7 @@ import { useStationStore } from '../stores/useStationStore';
 import { getLineColor } from '../data/lines';
 import { getCategoryById } from '../data/categories';
 import { getStationDetails } from '../data/stationDetails';
+import RealtimeArrival from './RealtimeArrival';
 
 export default function BottomSheet() {
   const { 
@@ -18,14 +19,6 @@ export default function BottomSheet() {
 
   const details = getStationDetails(selectedStation.id);
   const stationIsFavorite = isFavorite(selectedStation.id);
-
-  const handleDeparture = () => {
-    setDepartureStation(selectedStation);
-  };
-
-  const handleArrival = () => {
-    setArrivalStation(selectedStation);
-  };
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-30 max-h-[70vh] flex flex-col animate-slide-up">
@@ -72,23 +65,14 @@ export default function BottomSheet() {
           </div>
         </div>
         <div className="flex gap-2 mt-3">
-          <button 
-            onClick={handleDeparture}
-            className="flex-1 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition"
-          >
-            출발
-          </button>
-          <button 
-            onClick={handleArrival}
-            className="flex-1 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition"
-          >
-            도착
-          </button>
+          <button onClick={() => setDepartureStation(selectedStation)} className="flex-1 py-2.5 bg-blue-500 text-white rounded-lg font-medium">출발</button>
+          <button onClick={() => setArrivalStation(selectedStation)} className="flex-1 py-2.5 bg-red-500 text-white rounded-lg font-medium">도착</button>
         </div>
       </div>
-      <div className="flex-1 overflow-auto p-4">
-        {selectedStation.features.length > 0 && details ? (
-          <div>
+      <div className="flex-1 overflow-auto">
+        <RealtimeArrival stationName={selectedStation.name} />
+        {selectedStation.features.length > 0 && details && (
+          <div className="p-4 border-t">
             <div className="text-sm font-semibold text-gray-500 mb-3">역 주변 정보</div>
             <div className="space-y-3">
               {Object.entries(details).map(([category, items]) => {
@@ -101,17 +85,10 @@ export default function BottomSheet() {
                     </div>
                     <div className="space-y-2">
                       {items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex items-center justify-between p-3 rounded-lg ${
-                            item.highlight ? 'bg-blue-50 border border-blue-200' : 'bg-white'
-                          }`}
-                        >
+                        <div key={idx} className={`flex items-center justify-between p-3 rounded-lg ${item.highlight ? 'bg-blue-50 border border-blue-200' : 'bg-white'}`}>
                           <div>
                             <div className="font-medium text-gray-800">{item.name}</div>
-                            <div className={`text-sm ${item.highlight ? 'text-blue-600' : 'text-gray-500'}`}>
-                              {item.desc}
-                            </div>
+                            <div className={`text-sm ${item.highlight ? 'text-blue-600' : 'text-gray-500'}`}>{item.desc}</div>
                           </div>
                           <button className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg">보기</button>
                         </div>
@@ -121,10 +98,6 @@ export default function BottomSheet() {
                 );
               })}
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-400">
-            <p>이 역에는 등록된 주변 정보가 없습니다</p>
           </div>
         )}
       </div>

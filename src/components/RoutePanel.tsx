@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStationStore } from '../stores/useStationStore';
 import { getLineColor } from '../data/lines';
 
@@ -7,8 +8,14 @@ export default function RoutePanel() {
     arrivalStation, 
     swapStations, 
     clearRoute,
-    setRouteMode
+    setRouteMode,
+    departureTime,
+    setDepartureTime,
+    timeOption,
+    setTimeOption
   } = useStationStore();
+
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   if (!departureStation && !arrivalStation) return null;
 
@@ -16,6 +23,34 @@ export default function RoutePanel() {
     if (departureStation && arrivalStation) {
       setRouteMode(true);
     }
+  };
+
+  const formatTime = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const formatDate = (date: Date) => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekday = weekdays[date.getDay()];
+    return `${month}월 ${day}일 (${weekday})`;
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [hours, minutes] = e.target.value.split(':').map(Number);
+    const newTime = new Date(departureTime);
+    newTime.setHours(hours, minutes);
+    setDepartureTime(newTime);
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = new Date(e.target.value);
+    const newTime = new Date(departureTime);
+    newTime.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+    setDepartureTime(newTime);
   };
 
   return (
@@ -88,6 +123,70 @@ export default function RoutePanel() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+        </div>
+      </div>
+
+      {/* 시간 선택 */}
+      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700">출발 시간</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTimeOption('now')}
+              className={`px-3 py-1.5 rounded-lg text-sm ${
+                timeOption === 'now' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-white text-gray-600 border'
+              }`}
+            >
+              지금
+            </button>
+            <button
+              onClick={() => {
+                setTimeOption('custom');
+                setShowTimePicker(true);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm ${
+                timeOption === 'custom' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-white text-gray-600 border'
+              }`}
+            >
+              시간 설정
+            </button>
+          </div>
+        </div>
+
+        {/* 선택된 시간 표시 */}
+        {timeOption === 'custom' && (
+          <div className="mt-3 flex items-center gap-3">
+            <input
+              type="date"
+              value={departureTime.toISOString().split('T')[0]}
+              onChange={handleDateChange}
+              className="flex-1 px-3 py-2 border rounded-lg text-sm"
+            />
+            <input
+              type="time"
+              value={formatTime(departureTime)}
+              onChange={handleTimeChange}
+              className="px-3 py-2 border rounded-lg text-sm"
+            />
+          </div>
+        )}
+
+        {/* 현재 선택된 시간 표시 */}
+        <div className="mt-2 text-sm text-gray-500">
+          {timeOption === 'now' ? (
+            <span>현재 시간 기준 검색</span>
+          ) : (
+            <span>{formatDate(departureTime)} {formatTime(departureTime)} 출발</span>
+          )}
         </div>
       </div>
 

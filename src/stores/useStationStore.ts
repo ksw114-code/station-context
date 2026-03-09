@@ -9,6 +9,8 @@ interface Station {
   y: number;
   lines: string[];
   features: CategoryType[];
+  lat?: number;
+  lng?: number;
 }
 
 interface StationState {
@@ -34,6 +36,12 @@ interface StationState {
   clearRoute: () => void;
   isRouteMode: boolean;
   setRouteMode: (isRoute: boolean) => void;
+  
+  // 시간 설정
+  departureTime: Date;
+  setDepartureTime: (time: Date) => void;
+  timeOption: 'now' | 'custom';
+  setTimeOption: (option: 'now' | 'custom') => void;
 }
 
 export const useStationStore = create<StationState>((set, get) => ({
@@ -91,4 +99,16 @@ export const useStationStore = create<StationState>((set, get) => ({
   },
   isRouteMode: false,
   setRouteMode: (isRoute) => set({ isRouteMode: isRoute }),
+
+  // 시간 설정
+  departureTime: new Date(),
+  setDepartureTime: (time) => set({ departureTime: time }),
+  timeOption: 'now',
+  setTimeOption: (option) => {
+    if (option === 'now') {
+      set({ timeOption: option, departureTime: new Date() });
+    } else {
+      set({ timeOption: option });
+    }
+  },
 }));

@@ -11,11 +11,10 @@ interface SearchOverlayProps {
 
 export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
-  const { favorites, setSelectedStation } = useStationStore();
+  const [selectMode, setSelectMode] = useState<'info' | 'departure' | 'arrival'>('info');
+  const { favorites, setSelectedStation, setDepartureStation, setArrivalStation, departureStation, arrivalStation } = useStationStore();
 
   if (!isOpen) return null;
-  
-  console.log("stations 개수:", stations.length, "검색어:", query);
 
   const filteredStations = query
     ? stations.filter(s => s.name.includes(query))
@@ -26,9 +25,16 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const handleSelect = (stationId: string) => {
     const station = stations.find(s => s.id === stationId);
     if (station) {
-      setSelectedStation(station);
+      if (selectMode === 'departure') {
+        setDepartureStation(station);
+      } else if (selectMode === 'arrival') {
+        setArrivalStation(station);
+      } else {
+        setSelectedStation(station);
+      }
       onClose();
       setQuery('');
+      setSelectMode('info');
     }
   };
 
@@ -36,7 +42,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     <div className="absolute inset-0 bg-white z-40 flex flex-col">
       {/* 헤더 */}
       <div className="px-4 py-3 border-b flex items-center gap-3">
-        <button onClick={onClose}>
+        <button onClick={() => { onClose(); setSelectMode('info'); }}>
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -49,6 +55,28 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           autoFocus
           className="flex-1 bg-gray-100 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+      </div>
+
+      {/* 선택 모드 버튼 */}
+      <div className="px-4 py-2 border-b flex gap-2">
+        <button
+          onClick={() => setSelectMode('info')}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium ${selectMode === 'info' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600'}`}
+        >
+          역 정보
+        </button>
+        <button
+          onClick={() => setSelectMode('departure')}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium ${selectMode === 'departure' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+        >
+          출발역 {departureStation && `(${departureStation.name})`}
+        </button>
+        <button
+          onClick={() => setSelectMode('arrival')}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium ${selectMode === 'arrival' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+        >
+          도착역 {arrivalStation && `(${arrivalStation.name})`}
+        </button>
       </div>
 
       {/* 검색 결과 / 즐겨찾기 */}
