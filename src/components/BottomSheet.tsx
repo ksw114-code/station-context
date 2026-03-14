@@ -14,7 +14,7 @@ export default function BottomSheet() {
 
   if (!isBottomSheetOpen || !selectedStation) return null;
 
-  const detail = getStationDetails(selectedStation.id);
+  const detail = getStationDetails(selectedStation.id) as { address?: string; phone?: string; facilities?: string[] } | null;
   const exits = getStationExits(selectedStation.id);
   const timetable = getStationTimetable(selectedStation.id);
   const congestion = getCurrentCongestion(selectedStation.id);
@@ -138,13 +138,13 @@ export default function BottomSheet() {
                     </div>
                   </div>
                 )}
-                {detail.facilities && detail.facilities.length > 0 && (
+                {detail.facilities && Array.isArray(detail.facilities) && detail.facilities.length > 0 && (
                   <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                     <span className="text-lg">🏢</span>
                     <div>
                       <div className="text-xs text-gray-500">편의시설</div>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {detail.facilities.map((f, idx) => (
+                        {detail.facilities.map((f: string, idx: number) => (
                           <span key={idx} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{f}</span>
                         ))}
                       </div>
