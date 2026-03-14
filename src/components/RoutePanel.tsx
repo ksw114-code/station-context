@@ -17,8 +17,7 @@ export default function RoutePanel() {
     toggleFavorite
   } = useStationStore();
 
-  const [showTimePicker, setShowTimePicker] = useState(false);
-
+  
   if (!departureStation && !arrivalStation) return null;
 
   const handleShowDetail = () => {

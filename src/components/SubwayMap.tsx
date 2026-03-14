@@ -1,6 +1,5 @@
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { stations } from '../data/stations';
-import StationMarker from './StationMarker';
+
 
 export default function SubwayMap() {
   return (

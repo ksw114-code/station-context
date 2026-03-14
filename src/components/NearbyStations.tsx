@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { stations } from '../data/stations';
 import { useStationStore } from '../stores/useStationStore';
 import { getLineColor } from '../data/lines';
@@ -42,7 +42,7 @@ export default function NearbyStations() {
         setLoading(false);
         setIsOpen(true);
       },
-      (err) => {
+      () => {
         setError('위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
         setLoading(false);
       }
