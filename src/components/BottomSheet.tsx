@@ -4,18 +4,21 @@ import { getCategoryById } from '../data/categories';
 import { getStationDetails } from '../data/stationDetails';
 import { getStationExits } from '../data/stationExits';
 import { getStationTimetable } from '../data/stationTimetable';
+import { getCurrentCongestion, getCongestionLevel, stationCongestions } from '../data/congestion';
 import RealtimeArrival from './RealtimeArrival';
 import { useState } from 'react';
 
 export default function BottomSheet() {
   const { selectedStation, isBottomSheetOpen, closeBottomSheet, toggleFavorite, isFavorite } = useStationStore();
-  const [activeTab, setActiveTab] = useState<'info' | 'exits' | 'timetable' | 'realtime'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'exits' | 'timetable' | 'congestion' | 'realtime'>('info');
 
   if (!isBottomSheetOpen || !selectedStation) return null;
 
   const detail = getStationDetails(selectedStation.id);
   const exits = getStationExits(selectedStation.id);
   const timetable = getStationTimetable(selectedStation.id);
+  const congestion = getCurrentCongestion(selectedStation.id);
+  const stationCongestionData = stationCongestions.find(s => s.stationId === selectedStation.id);
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-30 max-h-[70vh] flex flex-col animate-slide-up">
@@ -66,27 +69,33 @@ export default function BottomSheet() {
       <div className="flex border-b overflow-x-auto">
         <button
           onClick={() => setActiveTab('info')}
-          className={`flex-1 py-3 text-sm font-medium whitespace-nowrap px-2 ${activeTab === 'info' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          className={`flex-1 py-3 text-xs font-medium whitespace-nowrap px-2 ${activeTab === 'info' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
         >
-          역 정보
+          역정보
         </button>
         <button
           onClick={() => setActiveTab('exits')}
-          className={`flex-1 py-3 text-sm font-medium whitespace-nowrap px-2 ${activeTab === 'exits' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          className={`flex-1 py-3 text-xs font-medium whitespace-nowrap px-2 ${activeTab === 'exits' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
         >
-          🚪 출구
+          🚪출구
         </button>
         <button
           onClick={() => setActiveTab('timetable')}
-          className={`flex-1 py-3 text-sm font-medium whitespace-nowrap px-2 ${activeTab === 'timetable' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          className={`flex-1 py-3 text-xs font-medium whitespace-nowrap px-2 ${activeTab === 'timetable' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
         >
-          🕐 첫/막차
+          🕐첫/막차
+        </button>
+        <button
+          onClick={() => setActiveTab('congestion')}
+          className={`flex-1 py-3 text-xs font-medium whitespace-nowrap px-2 ${activeTab === 'congestion' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+        >
+          👥혼잡도
         </button>
         <button
           onClick={() => setActiveTab('realtime')}
-          className={`flex-1 py-3 text-sm font-medium whitespace-nowrap px-2 ${activeTab === 'realtime' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          className={`flex-1 py-3 text-xs font-medium whitespace-nowrap px-2 ${activeTab === 'realtime' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
         >
-          🚇 실시간
+          🚇실시간
         </button>
       </div>
 
@@ -227,6 +236,92 @@ export default function BottomSheet() {
               <div className="text-center py-8 text-gray-400">
                 <p className="text-4xl mb-2">🕐</p>
                 <p>시간표 정보가 없습니다</p>
+                <p className="text-sm mt-1">추후 업데이트 예정입니다</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* 혼잡도 탭 */}
+        {activeTab === 'congestion' && (
+          <>
+            {congestion.length > 0 ? (
+              <div className="space-y-4">
+                {/* 현재 시간 혼잡도 */}
+                <div className="bg-blue-50 rounded-lg p-3 text-center">
+                  <div className="text-sm text-blue-600 font-medium">현재 시간 ({new Date().getHours()}시) 기준</div>
+                </div>
+
+                {congestion.map((item, idx) => {
+                  const levelInfo = getCongestionLevel(item.level);
+                  return (
+                    <div key={idx} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className="px-2 py-1 rounded text-white text-xs font-bold"
+                            style={{ backgroundColor: getLineColor(item.line) }}
+                          >
+                            {item.line.replace('호선', '')}
+                          </span>
+                          <span className="text-sm font-medium text-gray-700">{item.direction}</span>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-bold ${levelInfo.bgColor} ${levelInfo.color}`}>
+                          {levelInfo.emoji} {levelInfo.text}
+                        </div>
+                      </div>
+                      
+                      {/* 혼잡도 바 */}
+                      <div className="flex gap-1 mt-2">
+                        {[1, 2, 3, 4].map((level) => (
+                          <div 
+                            key={level}
+                            className={`flex-1 h-2 rounded ${item.level >= level ? 
+                              (level === 1 ? 'bg-green-500' : level === 2 ? 'bg-blue-500' : level === 3 ? 'bg-orange-500' : 'bg-red-500') 
+                              : 'bg-gray-200'}`}
+                          ></div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* 시간대별 혼잡도 */}
+                {stationCongestionData && stationCongestionData.lines.length > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm font-medium text-gray-700 mb-3">📊 시간대별 혼잡도</div>
+                    {stationCongestionData.lines[0].directions[0] && (
+                      <div className="bg-white border rounded-lg p-3">
+                        <div className="text-xs text-gray-500 mb-2">{stationCongestionData.lines[0].line} {stationCongestionData.lines[0].directions[0].direction}</div>
+                        <div className="flex gap-0.5 items-end h-16">
+                          {stationCongestionData.lines[0].directions[0].hourly.map((h, idx) => {
+                            const height = h.level * 25;
+                            const colors = ['bg-green-400', 'bg-blue-400', 'bg-orange-400', 'bg-red-400'];
+                            const isCurrentHour = h.hour === new Date().getHours();
+                            return (
+                              <div key={idx} className="flex-1 flex flex-col items-center">
+                                <div 
+                                  className={`w-full rounded-t ${colors[h.level - 1]} ${isCurrentHour ? 'ring-2 ring-black' : ''}`}
+                                  style={{ height: height + '%' }}
+                                ></div>
+                                <div className={`text-xs mt-1 ${isCurrentHour ? 'font-bold' : 'text-gray-400'}`}>{h.hour}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="text-xs text-gray-400 text-center mt-2">
+                  * 평일 기준 예상 혼잡도입니다
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <p className="text-4xl mb-2">👥</p>
+                <p>혼잡도 정보가 없습니다</p>
                 <p className="text-sm mt-1">추후 업데이트 예정입니다</p>
               </div>
             )}
