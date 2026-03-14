@@ -18,17 +18,18 @@ interface RouteInfo {
 }
 
 export default function RouteDetail() {
-  const { departureStation, arrivalStation, isRouteMode, clearRoute, setRouteMode, departureTime, timeOption } = useStationStore();
+  const { departureStation, arrivalStation, isRouteMode, clearRoute, setRouteMode, departureTime, setDepartureTime, timeOption, setTimeOption } = useStationStore();
   const [routes, setRoutes] = useState<RouteInfo[]>([]);
   const [selectedRoute, setSelectedRoute] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   useEffect(() => {
     if (isRouteMode && departureStation?.lat && arrivalStation?.lat) {
       fetchRoute();
     }
-  }, [isRouteMode, departureStation, arrivalStation, departureTime]);
+  }, [isRouteMode, departureStation, arrivalStation]);
 
   const fetchRoute = async () => {
     if (!departureStation?.lat || !arrivalStation?.lat) {
@@ -93,20 +94,54 @@ export default function RouteDetail() {
     return '지하철';
   };
 
-  const formatDateTime = (date: Date) => {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+  const formatTime = (date: Date) => {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
-    return month + '/' + day + ' ' + hours + ':' + minutes;
+    return hours + ':' + minutes;
+  };
+
+  const formatDate = (date: Date) => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekday = weekdays[date.getDay()];
+    return month + '/' + day + ' (' + weekday + ')';
   };
 
   const displayTime = timeOption === 'now' ? new Date() : departureTime;
 
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [hours, minutes] = e.target.value.split(':').map(Number);
+    const newTime = new Date(departureTime);
+    newTime.setHours(hours, minutes);
+    setDepartureTime(newTime);
+    setTimeOption('custom');
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = new Date(e.target.value);
+    const newTime = new Date(departureTime);
+    newTime.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+    setDepartureTime(newTime);
+    setTimeOption('custom');
+  };
+
+  const handleApplyTime = () => {
+    setShowTimePicker(false);
+    fetchRoute();
+  };
+
+  const handleSetNow = () => {
+    setTimeOption('now');
+    setShowTimePicker(false);
+    fetchRoute();
+  };
+
   return (
     <div className="absolute inset-0 bg-white z-50 flex flex-col">
+      {/* 헤더 */}
       <div className="bg-blue-500 text-white px-4 py-4">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <button onClick={() => setRouteMode(false)} className="p-1">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -115,16 +150,80 @@ export default function RouteDetail() {
           <h1 className="text-lg font-bold">경로 상세</h1>
           <div className="w-6"></div>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span>{departureStation.name}</span>
+        
+        {/* 출발/도착역 */}
+        <div className="flex items-center justify-center gap-3 text-base">
+          <span className="font-medium">{departureStation.name}</span>
           <span>→</span>
-          <span>{arrivalStation.name}</span>
+          <span className="font-medium">{arrivalStation.name}</span>
         </div>
-        <div className="mt-2 text-xs text-blue-100 text-center">
-          🕐 {formatDateTime(displayTime)} 출발 기준
-        </div>
+
+        {/* 시간 표시 - 클릭 가능 */}
+        <button 
+          onClick={() => setShowTimePicker(true)}
+          className="mt-3 mx-auto flex items-center gap-2 bg-blue-400 hover:bg-blue-300 px-4 py-2 rounded-full transition"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-base font-medium">
+            {formatDate(displayTime)} {formatTime(displayTime)} 출발
+          </span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
       </div>
 
+      {/* 시간 선택 모달 */}
+      {showTimePicker && (
+        <div className="absolute inset-0 bg-black/50 z-60 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-5 mx-4 w-full max-w-sm">
+            <h3 className="text-lg font-bold text-center mb-4">출발 시간 설정</h3>
+            
+            <button
+              onClick={handleSetNow}
+              className={`w-full py-3 mb-3 rounded-lg text-base font-medium ${timeOption === 'now' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+            >
+              지금 출발
+            </button>
+            
+            <div className="text-sm text-gray-500 text-center mb-2">또는 시간 직접 설정</div>
+            
+            <div className="flex gap-2 mb-4">
+              <input
+                type="date"
+                value={departureTime.toISOString().split('T')[0]}
+                onChange={handleDateChange}
+                className="flex-1 px-3 py-3 border rounded-lg text-base"
+              />
+              <input
+                type="time"
+                value={formatTime(departureTime)}
+                onChange={handleTimeChange}
+                className="px-3 py-3 border rounded-lg text-base"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowTimePicker(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleApplyTime}
+                className="flex-1 py-3 bg-blue-500 text-white rounded-lg font-medium"
+              >
+                적용
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 로딩 */}
       {loading && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -134,6 +233,7 @@ export default function RouteDetail() {
         </div>
       )}
 
+      {/* 에러 */}
       {error && !loading && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-gray-500">
@@ -143,25 +243,28 @@ export default function RouteDetail() {
         </div>
       )}
 
+      {/* 경로 결과 */}
       {!loading && !error && routes.length > 0 && currentRoute && (
         <>
+          {/* 요약 정보 */}
           <div className="flex border-b">
-            <div className="flex-1 text-center py-3 border-r">
-              <div className="text-2xl font-bold text-blue-600">{currentRoute.totalTime}분</div>
-              <div className="text-xs text-gray-500">소요시간</div>
+            <div className="flex-1 text-center py-4 border-r">
+              <div className="text-3xl font-bold text-blue-600">{currentRoute.totalTime}분</div>
+              <div className="text-sm text-gray-500">소요시간</div>
             </div>
-            <div className="flex-1 text-center py-3 border-r">
-              <div className="text-2xl font-bold text-gray-700">{currentRoute.subPath.reduce((sum, sp) => sum + (sp.stationCount || 0), 0)}개</div>
-              <div className="text-xs text-gray-500">정거장</div>
+            <div className="flex-1 text-center py-4 border-r">
+              <div className="text-3xl font-bold text-gray-700">{currentRoute.subPath.reduce((sum, sp) => sum + (sp.stationCount || 0), 0)}개</div>
+              <div className="text-sm text-gray-500">정거장</div>
             </div>
-            <div className="flex-1 text-center py-3">
-              <div className="text-2xl font-bold text-orange-500">{Math.max(0, currentRoute.transferCount)}회</div>
-              <div className="text-xs text-gray-500">환승</div>
+            <div className="flex-1 text-center py-4">
+              <div className="text-3xl font-bold text-orange-500">{Math.max(0, currentRoute.transferCount)}회</div>
+              <div className="text-sm text-gray-500">환승</div>
             </div>
           </div>
 
+          {/* 경로 선택 탭 */}
           {routes.length > 1 && (
-            <div className="flex gap-2 p-2 border-b overflow-x-auto">
+            <div className="flex gap-2 p-3 border-b overflow-x-auto">
               {routes.slice(0, 3).map((route, idx) => (
                 <button
                   key={idx}
@@ -174,6 +277,7 @@ export default function RouteDetail() {
             </div>
           )}
 
+          {/* 상세 경로 */}
           <div className="flex-1 overflow-auto p-4">
             {currentRoute.subPath.map((subPath, idx) => {
               const lineName = getLineName(subPath);
@@ -189,7 +293,7 @@ export default function RouteDetail() {
                   </div>
                   <div className="flex-1 pb-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold">{subPath.startName}</span>
+                      <span className="font-bold text-base">{subPath.startName}</span>
                       {isSubway && <span className="text-xs px-2 py-0.5 rounded text-white" style={{ backgroundColor: lineColor }}>{lineName}</span>}
                       {isBus && <span className="text-xs px-2 py-0.5 rounded bg-green-500 text-white">버스</span>}
                     </div>
@@ -197,7 +301,7 @@ export default function RouteDetail() {
                     {idx === currentRoute.subPath.length - 1 && (
                       <div className="mt-4 flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full border-2 bg-white" style={{ borderColor: lineColor }}></div>
-                        <span className="font-bold text-red-500">{subPath.endName}</span>
+                        <span className="font-bold text-base text-red-500">{subPath.endName}</span>
                         <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded">도착</span>
                       </div>
                     )}
@@ -209,6 +313,7 @@ export default function RouteDetail() {
         </>
       )}
 
+      {/* 하단 버튼 */}
       <div className="p-4 border-t">
         <button onClick={clearRoute} className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium">새로운 경로 검색</button>
       </div>
